@@ -7,14 +7,17 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.content.ContextCompat
 import android.Manifest
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.material.snackbar.Snackbar
 import com.kabekus.googlemapsproject.databinding.ActivityMapsBinding
 
@@ -25,6 +28,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationManager : LocationManager
     private lateinit var locationListener : LocationListener
     private lateinit var permissionLauncher : ActivityResultLauncher<String>
+    private lateinit var sharedpreferences : SharedPreferences
+    private var trackBool : Boolean? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,13 +43,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         registerLauncher()
+
+        sharedpreferences = this.getSharedPreferences("com.kabekus.googlemapsperoject", MODE_PRIVATE)
+        trackBool = false
     }
+
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         locationManager = this.getSystemService(LOCATION_SERVICE) as LocationManager
         locationListener = object : LocationListener{
+
             override fun onLocationChanged(location: Location) {
-                println("Location: "+location.toString())
+                trackBool = sharedpreferences.getBoolean("trackBool",false)
+                if (!trackBool!!){
+                    val userLocation = LatLng(location.latitude,location.longitude)
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation,15f))
+                    sharedpreferences.edit().putBoolean("trackBool",true).apply()
+                }
             }
 
         }
@@ -60,7 +75,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
              }else{
                  permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
              }
-
          }else {
              locationManager.requestLocationUpdates(
                  LocationManager.GPS_PROVIDER,
@@ -68,6 +82,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                  0f,
                  locationListener
              )
+             val lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+             if (lastLocation != null){
+                 val lastUserLocation = LatLng(lastLocation.latitude,lastLocation.longitude)
+                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lastUserLocation,15f))
+             }
+             mMap.isMyLocationEnabled = true
          }
 
     }
@@ -84,6 +104,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         0f,
                         locationListener
                     )
+                    val lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    if (lastLocation != null){
+                        val lastUserLocation = LatLng(lastLocation.latitude,lastLocation.longitude)
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lastUserLocation,15f))
+                    }
+                    mMap.isMyLocationEnabled = true
                 }
 
             }else{
