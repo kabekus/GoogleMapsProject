@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:text="Text"
         android:textSize="20sp"
-        android:textColor="#60E8A8"
+        android:textColor="#03552E"
         android:layout_margin="5dp">
     </TextView>
 </LinearLayout>
